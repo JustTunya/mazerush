@@ -25,3 +25,13 @@ draw_maze(Maze, N, PlayerX, PlayerY):-
         ),
         nl)
     ).
+
+step(_, X, Y, X, Y). % stays at the same place
+step(w, X, Y, X, Y_prime):-
+    Y_prime is Y - 1.
+step(a, X, Y, X_prime, Y):-
+    X_prime is X - 1.
+step(s, X, Y, X, Y_prime):-
+    Y_prime is Y + 1.
+step(d, X, Y, X_prime, Y):-
+    X_prime is X + 1.
