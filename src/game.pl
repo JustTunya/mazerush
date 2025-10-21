@@ -1,10 +1,19 @@
+game_loop(Maze, CurrentX, CurrentY) :-
+    length(Maze, N),
+    draw_maze(Maze, N, CurrentX, CurrentY),
+    write('Enter move (w/a/s/d): '),
+    get_single_char(Code),
+    get_direction(Code, Direction),
+    move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY),
+    game_loop(Maze, NewX, NewY).
+
 get_char(Maze, X, Y, Cell) :-
     nth1(Y, Maze, Row),
     nth1(X, Row, Cell).
 
 inside(N, X, Y) :-
-    X >= 0, X < N,
-    Y >= 0, Y < N.
+    between(1, N, X),
+    between(1, N, Y).
 
 valid_move(Maze, N, X, Y) :-
     inside(N, X, Y),
@@ -18,6 +27,7 @@ draw_cell(Symbol, _, _, _, _):-
     write(Symbol), !.
 
 draw_maze(Maze, N, PlayerX, PlayerY):-
+    nl,
     forall(between(1, N, I),
         (forall(between(1, N, J),
             (get_char(Maze, I, J, Cell),
@@ -26,12 +36,31 @@ draw_maze(Maze, N, PlayerX, PlayerY):-
         nl)
     ).
 
-step(_, X, Y, X, Y). % stays at the same place
-step(w, X, Y, X, Y_prime):-
-    Y_prime is Y - 1.
-step(a, X, Y, X_prime, Y):-
+step(w, X, Y, X_prime, Y):-
     X_prime is X - 1.
-step(s, X, Y, X, Y_prime):-
-    Y_prime is Y + 1.
-step(d, X, Y, X_prime, Y):-
+step(a, X, Y, X, Y_prime):-
+    Y_prime is Y - 1.
+step(s, X, Y, X_prime, Y):-
     X_prime is X + 1.
+step(d, X, Y, X, Y_prime):-
+    Y_prime is Y + 1.
+step(_, X, Y, X, Y). % stays at the same place
+
+move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY):-
+    step(Direction, CurrentX, CurrentY, TempX, TempY),
+    (valid_move(Maze, N, TempX, TempY) ->
+        (NewX = TempX, NewY = TempY)
+    ;   (NewX = CurrentX, NewY = CurrentY)
+    ).
+
+%get_direction(Char, Direction):-
+%UPPERCASE
+get_direction(87, w).
+get_direction(65, a).
+get_direction(83, s).
+get_direction(68, d).
+%LOWERCASE
+get_direction(119, w).
+get_direction(97, a).
+get_direction(115, s).
+get_direction(100, d).
