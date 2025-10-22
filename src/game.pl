@@ -16,7 +16,7 @@ goal_reached(X, Y, X, Y).
 
 % !-- DRAWING THE MAZE --!
 
-draw_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY):-
+draw_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY) :-
     nl,
     forall(between(1, N, I),
         (forall(between(1, N, J),
@@ -27,16 +27,18 @@ draw_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY):-
     ).
 
 % Usage: draw_cell(Symbol, PlayerX, PlayerY, GoalX, GoalY, CellX, CellY)
-draw_cell(_, X, Y, _, _, X, Y):-
-    write('P'), !.
-draw_cell(_, _, _, X, Y, X, Y):-
-    write('G'), !.
-draw_cell(Symbol, _, _, _, _, _, _):-
-    write(Symbol), !.
+draw_cell(_, X, Y, _, _, X, Y) :-
+    write('\033[33m'), put(0x25C9), write('\033[0m '), !. % Unicode value of ◉ (PLAYER)
+draw_cell(_, _, _, X, Y, X, Y) :-
+    write('\033[34m'), put(0x2691), write('\033[0m '), !. % Unicode value of ⚐ (GOAL)
+draw_cell('.', _, _, _, _, _, _) :-
+    write('\033[30m'), put(0x26F6), write('\033[0m '), !. % Unicode value of ⛶ (PATH)
+draw_cell('#', _, _, _, _, _, _) :-
+    write('\033[31m'), put(0x25A8), write('\033[0m '), !. % Unicode value of ▨ (WALL)
 
 % !-- PLAYERS MOVEMENT --!
 
-move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY):-
+move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY) :-
     step(Direction, CurrentX, CurrentY, TempX, TempY),
     (valid_move(Maze, N, TempX, TempY) ->
         (NewX = TempX, NewY = TempY)
@@ -44,13 +46,13 @@ move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY):-
     ).
 
 % Usage: step(Direction, CurrentX, CurrentY, NewX, NewY)
-step(w, X, Y, X_prime, Y):-
+step(w, X, Y, X_prime, Y) :-
     X_prime is X - 1.
-step(a, X, Y, X, Y_prime):-
+step(a, X, Y, X, Y_prime) :-
     Y_prime is Y - 1.
-step(s, X, Y, X_prime, Y):-
+step(s, X, Y, X_prime, Y) :-
     X_prime is X + 1.
-step(d, X, Y, X, Y_prime):-
+step(d, X, Y, X, Y_prime) :-
     Y_prime is Y + 1.
 step(_, X, Y, X, Y). % fallback - no movement
 
