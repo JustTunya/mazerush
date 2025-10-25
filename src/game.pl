@@ -1,19 +1,34 @@
+:- use_module(library(pce)).
+:- dynamic canvas/1.
+:- dynamic cell_size/1.
+
+cell_size(64).
+
 start :-
     Maze = [
-        ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-        ['#', '.', '.', '.', '#', '.', '.', '.', '.', '#'],
-        ['#', '.', '#', '.', '#', '.', '#', '#', '.', '#'],
-        ['#', '.', '#', '.', '.', '.', '.', '#', '.', '#'],
-        ['#', '.', '#', '#', '#', '#', '.', '#', '.', '#'],
-        ['#', '.', '.', '.', '.', '#', '.', '#', '.', '#'],
-        ['#', '.', '#', '#', '.', '#', '.', '#', '.', '#'],
-        ['#', '.', '.', '#', '.', '#', '.', '#', '.', '#'],
-        ['#', '#', '.', '#', '.', '.', '.', '#', '.', '#'],
-        [' ', '#', '#', '#', '#', '#', '#', '#', '#', '#']
+        ['#','#','#','#','#'],
+        ['#','.','.','.','#'],
+        ['#','.','#','.','#'],
+        ['#','.','.','.','#'],
+        ['#','#','#','#','#']
     ],
     StartX = 2, StartY = 2,
-    GoalX = 9, GoalY = 9,
+    GoalX = 4, GoalY = 4,
+    cell_size(S),
+    create_interface(5, 5, S),
     game_loop(Maze, 0, StartX, StartY, GoalX, GoalY).
+
+% !-- GUI --!
+
+create_interface(Width, Height, Cell) :-
+    WinW is Width * Cell,
+    WinH is Height * Cell,
+    new(Window, picture('MazeRush', size(WinW, WinH))),
+    send(Window, open),
+    retractall(canvas(_)),
+    assertz(canvas(Window)),
+    retractall(cell_size(_)),
+    assertz(cell_size(Cell)).
 
 % !-- GAME LOGIC --!
 
@@ -34,26 +49,47 @@ goal_reached(X, Y, X, Y).
 % !-- DRAWING TO COMMAND LINE --!
 
 draw_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY) :-
-    nl, nl,
+    ( canvas(Window) -> send(Window, clear) ; true ),
+    % 1) PATH and GOAL
     forall(between(1, N, I),
-        (forall(between(1, N, J),
-            (get_cell(Maze, J, I, Cell),
-            draw_cell(Cell, PlayerX, PlayerY, GoalX, GoalY, J, I))
-        ),
-        nl)
-    ).
+      forall(between(1, N, J),
+        ( get_cell(Maze, J, I, C),
+          draw_base(C, GoalX, GoalY, J, I)
+        ))),
+    % 2) PLAYER
+    draw_player(PlayerX, PlayerY),
+    % 3) WALL
+    forall(between(1, N, I),
+      forall(between(1, N, J),
+        ( get_cell(Maze, J, I, C),
+          draw_wall(C, J, I)
+        ))).
 
 % Usage: draw_cell(Symbol, PlayerX, PlayerY, GoalX, GoalY, CellX, CellY)
-draw_cell(_, X, Y, _, _, X, Y) :-
-    write('\033[33m'), put(0x25C9), write('\033[0m '), !. % Unicode value of ◉ (PLAYER)
-draw_cell(_, _, _, X, Y, X, Y) :-
-    write('\033[34m'), put(0x2691), write('\033[0m '), !. % Unicode value of ⚐ (GOAL)
-draw_cell('.', _, _, _, _, _, _) :-
-    write('\033[30m'), put(0x26F6), write('\033[0m '), !. % Unicode value of ⛶ (PATH)
-draw_cell('#', _, _, _, _, _, _) :-
-    write('\033[31m'), put(0x25A8), write('\033[0m '), !. % Unicode value of ▨ (WALL)
-draw_cell(_, _, _, _, _, _, _) :-
-    write('  '). % fallback - empty space
+draw_base(_, GX, GY, GX, GY) :- % goal
+    canvas(W), cell_size(S),
+    X0 is (GX-1)*S, Y0 is (GY-1)*S,
+    new(B, bitmap('assets/path.xpm')),
+    send(W, display, B, point(X0, Y0)), !.
+draw_base('.', _, _, X, Y) :- % path
+    canvas(W), cell_size(S),
+    X0 is (X-1)*S, Y0 is (Y-1)*S,
+    new(B, bitmap('assets/path.xpm')),
+    send(W, display, B, point(X0, Y0)), !.
+draw_base(_, _, _, _, _) :- true. % fallback
+
+draw_player(X, Y) :- % player
+    canvas(W), cell_size(S),
+    X0 is (X-1)*S, Y0 is (Y-1)*S,
+    new(B, bitmap('assets/player.xpm')),
+    send(W, display, B, point(X0, Y0)).
+
+draw_wall('#', X, Y) :-                   % wall
+    canvas(W), cell_size(S),
+    X0 is (X-1)*S, Y0 is (Y-1)*S,
+    new(B, bitmap('assets/wall.xpm')),
+    send(W, display, B, point(X0, Y0)), !.
+draw_wall(_, _, _) :- true.
 
 draw_ui(Moves) :-
     nl,
@@ -100,7 +136,3 @@ code_to_char(Code, Char) :-
     ;   LowerCode = Code
     ),
     char_code(Char, LowerCode).
-
-
-% ?-- EXAMPLES --?
-% game_loop([['#', '#', '#', '#', '#'],['#', '.', '.', '.', '#'],['#', '.', '#', '.', '#'],['#', '.', '.', '.', '#'],['#', '#', '#', '#', '#']], 0, 2, 2, 4, 4).
