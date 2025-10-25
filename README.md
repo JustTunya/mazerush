@@ -10,3 +10,10 @@ The goal of MazeRush is to escape from the randomly generated maze as fast as po
 ## Documentation used
 
 %https://www.swi-prolog.org/pldoc/man?predicate=nth0/4
+
+http://swi-prolog.org/pldoc/man?predicate=random_between/3
+
+append
+
+we are indexing our maze from 1,1 to n,n
+\_prime notation
