@@ -172,7 +172,7 @@ dfs_carve(Grid, [(RowIndex, ColumnIndex)|RestStack], N, NewGrid):-
       mid_cell((RowIndex, ColumnIndex), (RandomRow, RandomColumn), (MiddleRow, MiddleColumn)),
       carve_path(Grid, MiddleRow, MiddleColumn, Grid_prime),
       carve_path(Grid_prime, RandomRow, RandomColumn, GridNext), % carve target cell
-      dfs_carve(GridNext, [(RandomRow, RandomColumn)|RestStack], N, NewGrid)
+      dfs_carve(GridNext, [(RandomRow, RandomColumn), (RowIndex, ColumnIndex)|RestStack], N, NewGrid) % pushing the new cell on top instead of replacing!!!
     ).
 
 %filter unvisited neighbours
@@ -198,3 +198,14 @@ unvisited(Grid, (RowIndex, ColumnIndex)):-
     nth1(RowIndex, Grid, Row),
     nth1(ColumnIndex, Row, Cell),
     wall_cell(Cell).
+
+% generate_maze(+N, -Maze)
+generate_maze(N, Maze):-
+    GridSize is 2*N + 1,
+    make_grid(GridSize, Grid),
+    % choose random starting cell in odd indices
+    random_between(1, N, RandomRowIndex), StartRowIndex is 2 * RandomRowIndex - 1,
+    random_between(1, N, RandomColumnIndex), StartColumnIndex is 2 * RandomColumnIndex - 1,
+    carve_path(Grid, StartRowIndex, StartColumnIndex, Grid_prime), % carve starting cell
+    dfs_carve(Grid_prime, [(StartRowIndex, StartColumnIndex)], GridSize, Maze),
+    print_grid(Maze).
