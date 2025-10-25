@@ -1,11 +1,17 @@
-game_loop(Maze, CurrentX, CurrentY) :-
+% ?- game_loop([['#', '#', '#', '#', '#'],['#', '.', '.', '.', '#'],['#', '.', '#', '.', '#'],['#', '.', '.', '.', '#'],['#', '#', '#', '#', '#']], 2, 2, 4, 4).
+
+game_loop(Maze, CurrentX, CurrentY, GoalX, GoalY) :-
     length(Maze, N),
-    draw_maze(Maze, N, CurrentX, CurrentY),
-    write('Enter move (w/a/s/d): '),
-    get_single_char(Code),
-    get_direction(Code, Direction),
-    move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY),
-    game_loop(Maze, NewX, NewY).
+    draw_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY),
+    (reachedGoal(CurrentX, CurrentY, GoalX, GoalY) ->
+        write('You reached the goal!'), !
+    ;
+        write('Enter move (w/a/s/d): '),
+        get_single_char(Code),
+        get_direction(Code, Direction),
+        move(Maze, N, Direction, CurrentX, CurrentY, NewX, NewY),
+        game_loop(Maze, NewX, NewY, GoalX, GoalY)
+    ), !.
 
 get_char(Maze, X, Y, Cell) :-
     nth1(Y, Maze, Row),
@@ -20,18 +26,20 @@ valid_move(Maze, N, X, Y) :-
     get_char(Maze, X, Y, Cell),
     Cell \= '#'.
 
-% draw_cell(Symbol, PlayerX, PlayerY, CellX, CellY)
-draw_cell(_, X, Y, X, Y):-
+% draw_cell(Symbol, PlayerX, PlayerY, GoalX, GoalY, CellX, CellY)
+draw_cell(_, PlayerX, PlayerY, _, _, PlayerX, PlayerY):-
     write('P'), !.
-draw_cell(Symbol, _, _, _, _):-
+draw_cell(_, _, _, GoalX, GoalY, GoalX, GoalY):-
+    write('G'), !.
+draw_cell(Symbol, _, _, _, _, _, _):-
     write(Symbol), !.
 
-draw_maze(Maze, N, PlayerX, PlayerY):-
+draw_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY):-
     nl,
     forall(between(1, N, I),
         (forall(between(1, N, J),
             (get_char(Maze, I, J, Cell),
-            draw_cell(Cell, PlayerX, PlayerY, I, J))
+            draw_cell(Cell, PlayerX, PlayerY, GoalX, GoalY, I, J))
         ),
         nl)
     ).
@@ -64,3 +72,5 @@ get_direction(119, w).
 get_direction(97, a).
 get_direction(115, s).
 get_direction(100, d).
+
+reachedGoal(X, Y, X, Y).
