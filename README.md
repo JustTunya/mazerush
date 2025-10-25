@@ -17,3 +17,5 @@ append
 
 we are indexing our maze from 1,1 to n,n
 \_prime notation
+
+https://www.swi-prolog.org/pldoc/man?predicate=random_member/2

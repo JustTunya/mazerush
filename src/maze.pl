@@ -150,3 +150,39 @@ carve_path(Grid, RowIndex, ColumnIndex, NewGrid):-
 % NewGrid = [[#, #, #, #, #], [#, #, '.', #, #], [#, #, #, #, #], [#, #, #, #, #], [#, #, #, #|...]] ;
 % false.
 
+% dfs_carve(+Grid, +Stack, +N, -NewGrid)
+dfs_carve(Grid, [], _, Grid). % we are done when the stack gets empty
+
+dfs_carve(Grid, [(RowIndex, ColumnIndex)|RestStack], N, NewGrid):-
+    neighbours(RowIndex, ColumnIndex, N, Neighbours),
+    filter_unvisited(Neighbours, Grid, Unvisited), % we need the unvisited neighbours
+    ( Unvisited = [] -> dfs_carve(Grid, RestStack, N, NewGrid) % this means that we reached a dead-end in carving and need to backtrack
+    ;
+      random_member((RandomRow, RandomColumn), Unvisited),
+      carve_path(Grid, RandomRow, RandomColumn, GridNext),
+      dfs_carve(GridNext, [(RandomRow, RandomColumn)|RestStack], N, NewGrid)
+    ).
+
+%filter unvisited neighbours
+% filter_unvisited(+NeighboursList, +Grid, -FilteredNeighboursList)
+filter_unvisited([], _, []).
+filter_unvisited([(RowIndex, ColumnIndex)|Rest], Grid, [(RowIndex, ColumnIndex)|FilteredRest]):-
+    unvisited(Grid, (RowIndex, ColumnIndex)), % we check if the cell at RowIndex, ColumnIndex is visited or not
+    filter_unvisited(Rest, Grid, FilteredRest).
+
+filter_unvisited([(RowIndex, ColumnIndex)|Rest], Grid, FilteredNeighboursList):- % we need this case, because we match the string in the parameterlist in the first above
+    \+ unvisited(Grid, (RowIndex, ColumnIndex)),
+    filter_unvisited(Rest, Grid, FilteredNeighboursList).
+
+% ?- make_grid(5, G), carve_path(G, 2, 3, G2), neighbours(3, 3, 5, N), filter_unvisited(N, G2, U).
+% G = [[#, #, #, #, #], [#, #, #, #, #], [#, #, #, #, #], [#, #, #, #, #], [#, #, #, #|...]],
+% G2 = [[#, #, #, #, #], [#, #, '.', #, #], [#, #, #, #, #], [#, #, #, #, #], [#, #, #, #|...]],
+% N = [(2, 3), (3, 4), (4, 3), (3, 2)],
+% U = [(3, 4), (4, 3), (3, 2)] ;
+% false.
+
+% unvisited check
+unvisited(Grid, (RowIndex, ColumnIndex)):-
+    nth1(RowIndex, Grid, Row),
+    nth1(ColumnIndex, Row, Cell),
+    wall_cell(Cell).
