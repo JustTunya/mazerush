@@ -111,25 +111,25 @@ neighbours(RowIndex, ColumnIndex, N, Neighbours):- % Neighbours will be a list i
 
 % neighbours_up(+RowIndex, +ColumnIndex, +N, -NeighbourList)
 neighbours_up(RowIndex, ColumnIndex, _, [(RowIndex_prime, ColumnIndex)]):-
-    RowIndex_prime is RowIndex - 1,
+    RowIndex_prime is RowIndex - 2,
     RowIndex_prime >= 1, !.
 neighbours_up(_, _, _, []). % Out of bounds, no neighbour
 
 % neighbours_right(+RowIndex, +ColumnIndex, +N, -NeighbourList)
 neighbours_right(RowIndex, ColumnIndex, N, [(RowIndex, ColumnIndex_prime)]):-
-    ColumnIndex_prime is ColumnIndex + 1,
+    ColumnIndex_prime is ColumnIndex + 2,
     ColumnIndex_prime =< N, !.
 neighbours_right(_, _, _, []). % Out of bounds, no neighbour
 
 % neighbours_down(+RowIndex, +ColumnIndex, +N, -NeighbourList)
 neighbours_down(RowIndex, ColumnIndex, N, [(RowIndex_prime, ColumnIndex)]):-
-    RowIndex_prime is RowIndex + 1,
+    RowIndex_prime is RowIndex + 2,
     RowIndex_prime =< N, !.
 neighbours_down(_, _, _, []). % Out of bounds, no neighbour
 
 % neighbours_left(+RowIndex, +ColumnIndex, +N, -NeighbourList)
 neighbours_left(RowIndex, ColumnIndex, _, [(RowIndex, ColumnIndex_prime)]):-
-    ColumnIndex_prime is ColumnIndex - 1,
+    ColumnIndex_prime is ColumnIndex - 2,
     ColumnIndex_prime >= 1, !.
 neighbours_left(_, _, _, []). % Out of bounds, no neighbour
 
@@ -150,6 +150,16 @@ carve_path(Grid, RowIndex, ColumnIndex, NewGrid):-
 % NewGrid = [[#, #, #, #, #], [#, #, '.', #, #], [#, #, #, #, #], [#, #, #, #, #], [#, #, #, #|...]] ;
 % false.
 
+% when moving from one cell to the other we need to carve the path between them, not just the target cell
+% mid_cell((+CurrentRow, +CurrentColumn), (+TargetRow, +TargetColumn), (-MiddleRow, -MiddleColumn))
+mid_cell((CurrentRow, CurrentColumn), (TargetRow, TargetColumn), (MiddleRow, MiddleColumn)):-
+    MiddleRow is (CurrentRow + TargetRow) // 2, % we calc the average of them
+    MiddleColumn is (CurrentColumn + TargetColumn) // 2.
+
+% ?- mid_cell((3,4), (3,6), (MiddleRow, MiddleColumn)).
+% MiddleRow = 3,
+% MiddleColumn = 5.
+
 % dfs_carve(+Grid, +Stack, +N, -NewGrid)
 dfs_carve(Grid, [], _, Grid). % we are done when the stack gets empty
 
@@ -159,7 +169,9 @@ dfs_carve(Grid, [(RowIndex, ColumnIndex)|RestStack], N, NewGrid):-
     ( Unvisited = [] -> dfs_carve(Grid, RestStack, N, NewGrid) % this means that we reached a dead-end in carving and need to backtrack
     ;
       random_member((RandomRow, RandomColumn), Unvisited),
-      carve_path(Grid, RandomRow, RandomColumn, GridNext),
+      mid_cell((RowIndex, ColumnIndex), (RandomRow, RandomColumn), (MiddleRow, MiddleColumn)),
+      carve_path(Grid, MiddleRow, MiddleColumn, Grid_prime),
+      carve_path(Grid_prime, RandomRow, RandomColumn, GridNext), % carve target cell
       dfs_carve(GridNext, [(RandomRow, RandomColumn)|RestStack], N, NewGrid)
     ).
 
