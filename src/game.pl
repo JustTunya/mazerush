@@ -1,5 +1,19 @@
 % ?- game_loop([['#', '#', '#', '#', '#'],['#', '.', '.', '.', '#'],['#', '.', '#', '.', '#'],['#', '.', '.', '.', '#'],['#', '#', '#', '#', '#']], 2, 2, 4, 4).
 
+start_game(N, Maze):-
+    random_valid_cell(N, Maze, StartX, StartY),
+    random_valid_cell(N, Maze, GoalX, GoalY),
+    game_loop(Maze, StartX, StartY, GoalX, GoalY).
+
+random_valid_cell(N, Maze, RowIndex, ColumnIndex):-
+    random_between(1, N, RowIndex_prime), RowTemp is 2 * RowIndex_prime - 1,
+    random_between(1, N, ColumnIndex_prime), ColumnTemp is 2 * ColumnIndex_prime - 1,
+    wall_cell(WallCell),
+    get_char(Maze, RowTemp, ColumnTemp, Cell),
+    ( Cell \= WallCell -> RowIndex = RowTemp, ColumnIndex = ColumnTemp
+    ; random_valid_cell(N, Maze, RowIndex, ColumnIndex)
+    ).
+
 game_loop(Maze, CurrentX, CurrentY, GoalX, GoalY) :-
     length(Maze, N),
     draw_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY),

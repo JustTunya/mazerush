@@ -1,6 +1,8 @@
 % Defining symbolic constants
 empty_cell('.').
 wall_cell('#').
+player_cell('P').
+goal_cell('G').
 
 % First we make a grid full of walls, basically a maze you cannot walk anywhere
 
@@ -208,4 +210,4 @@ generate_maze(N, Maze):-
     random_between(1, N, RandomColumnIndex), StartColumnIndex is 2 * RandomColumnIndex - 1,
     carve_path(Grid, StartRowIndex, StartColumnIndex, Grid_prime), % carve starting cell
     dfs_carve(Grid_prime, [(StartRowIndex, StartColumnIndex)], GridSize, Maze),
-    print_grid(Maze).
+    print_grid(Maze). % this print is for debug only
