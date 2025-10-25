@@ -4,13 +4,14 @@ menu:-
     choose_difficulty(N),
     write(N),
     generate_maze(N, Maze),
-    start_game(N, Maze).
+    % start_game(N, Maze).
+    graphic_start_game(N, Maze), !.
 
 choose_difficulty(N):-
     write('a. Easy'), nl,
     write('b. Medium'), nl,
     write('c. Hard'), nl,
-    write('Choose a difficulty!'),
+    write('Choose a difficulty!'), nl,
     get_single_char(Code),
     char_code(Difficulty, Code), % converting ascii code to Char
     ( difficulty(Difficulty, N) -> true
