@@ -1,6 +1,6 @@
 # MazeRush
 
-MazeRush is a simple tile-based maze game written in **SWI-Prolog** using the **SDL2** library.  
+MazeRush is a simple tile-based maze game written in **SWI-Prolog** using **XPCE**.  
 Created by **Vidám Szabolcs** and **Tunya Lénárd-Sándor**.
 
 ## Overview
