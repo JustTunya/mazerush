@@ -1,54 +1,56 @@
-start(N, Maze) :-
+start(N, Maze, K) :-
     random_valid_cell(Maze, N, StartX, StartY),
     random_valid_cell(Maze, N, GoalX, GoalY),
-    random_valid_cell(Maze, N, EnemyX, EnemyY),
+    make_enemies(K, Maze, N, Enemies),
     create_interface(2*N+2, 2*N+2),
-    game_loop(Maze, 0, StartX, StartY, GoalX, GoalY, EnemyX, EnemyY).
+    game_loop(Maze, 0, StartX, StartY, GoalX, GoalY, Enemies).
 
 % !-- GAME LOGIC --!
 
-game_loop(Maze, Moves, CurrentX, CurrentY, GoalX, GoalY, EnemyX, EnemyY) :-
+game_loop(Maze, Moves, PX, PY, GX, GY, Enemies) :-
     length(Maze, N),
-    draw_cmd_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY, EnemyX, EnemyY),
-    draw_gui_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY, EnemyX, EnemyY),
-    (goal_reached(CurrentX, CurrentY, GoalX, GoalY) ->
-        nl, write('Congratulations! You reached the goal in \033[33m'), write(Moves), write('\033[0m moves!'), nl, nl, !
-    ;   enemy_collision(CurrentX, CurrentY, EnemyX, EnemyY) ->
-        nl, write('\033[31mYou were caught by the enemy!\033[0m'), nl, !
+    draw_cmd_maze(Maze, N, PX, PY, GX, GY, Enemies),
+    draw_gui_maze(Maze, N, PX, PY, GX, GY, Enemies),
+    (   goal_reached(PX, PY, GX, GY) ->
+            nl, write('Congratulations! You reached the goal in \033[33m'),
+            write(Moves), write('\033[0m moves!'), nl, nl, !
+    ;   enemy_collision(PX, PY, Enemies) ->
+            nl, write('\033[31mYou were caught by the enemy!\033[0m'), nl, !
     ;   draw_ui(Moves),
         get_single_char(Code),
         code_to_char(Code, Direction),
-        move(Maze, N, Direction, Moves, NewMoves, CurrentX, CurrentY, NewPlayerX, NewPlayerY),
-        move_enemy(Maze, N, EnemyX, EnemyY, NewPlayerX, NewPlayerY, NewEnemyX, NewEnemyY),
-        game_loop(Maze, NewMoves, NewPlayerX, NewPlayerY, GoalX, GoalY, NewEnemyX, NewEnemyY)
+        move(Maze, N, Direction, Moves, NewMoves, PX, PY, NPX, NPY),
+        move_enemies(Maze, N, Enemies, NPX, NPY, NewEnemies),
+        game_loop(Maze, NewMoves, NPX, NPY, GX, GY, NewEnemies)
     ), !.
 
 goal_reached(X, Y, X, Y).
 
 % !-- DRAWING TO COMMAND LINE --!
 
-draw_cmd_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY) :-
+draw_cmd_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, Enemies) :-
     nl, nl,
     forall(between(1, N, I),
         (forall(between(1, N, J),
             (get_cell(Maze, J, I, Cell),
-            draw_cell(Cell, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY, J, I))
+             draw_cell(Cell, PlayerX, PlayerY, GoalX, GoalY, Enemies, J, I))
         ),
         nl)
     ).
 
 % Usage: draw_cell(Symbol, PlayerX, PlayerY, GoalX, GoalY, CellX, CellY)
-draw_cell(_, X, Y, _, _, _, _, X, Y) :-
+draw_cell(_, X, Y, _, _, _, X, Y) :-
     write('\033[33m'), put(0x25C9), write('\033[0m '), !. % Unicode value of ◉ (PLAYER)
-draw_cell(_, _, _, X, Y, _, _, X, Y) :-
+draw_cell(_, _, _, X, Y, _, X, Y) :-
     write('\033[34m'), put(0x2691), write('\033[0m '), !. % Unicode value of ⚐ (GOAL)
-draw_cell(_, _, _, _, _, X, Y, X, Y) :-
+draw_cell(_, _, _, _, _, Enemies, X, Y) :-
+    member((X,Y), Enemies),
     write('\033[35m'), put(0x2BBF), write('\033[0m '), !. % Unicode value of ⮿ (ENEMY)
-draw_cell('.', _, _, _, _, _, _, _, _) :-
+draw_cell('.', _, _, _, _, _, _, _) :-
     write('\033[30m'), put(0x26F6), write('\033[0m '), !. % Unicode value of ⛶ (PATH)
-draw_cell('#', _, _, _, _, _, _, _, _) :-
+draw_cell('#', _, _, _, _, _, _, _) :-
     write('\033[31m'), put(0x25A8), write('\033[0m '), !. % Unicode value of ▨ (WALL)
-draw_cell(_, _, _, _, _, _, _, _, _) :-
+draw_cell(_, _, _, _, _, _, _, _) :-
     write('  '). % fallback - empty space
 
 draw_ui(Moves) :-

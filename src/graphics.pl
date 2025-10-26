@@ -15,7 +15,7 @@ create_interface(Width, Height) :-
     retractall(cell_size(_)),
     assertz(cell_size(Cell)).
 
-draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY) :-
+draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, Enemies) :-
     ( canvas(Window) -> send(Window, clear) ; true ),
     % 1) PATH
     forall(between(1, N, I),
@@ -27,14 +27,21 @@ draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY) :-
     draw_entity(GoalX, GoalY, 'assets/goal.xpm'),
     % 3) PLAYER
     draw_entity(PlayerX, PlayerY, 'assets/player.xpm'),
-    % 4) ENEMIES
-    draw_entity(EnemyX, EnemyY, 'assets/enemy_1.xpm'),
-    % 4) WALL
+    % 4) ENEMIES (list)
+    draw_enemies(Enemies, 1),
+    % 5) WALL
     forall(between(1, N, I),
       forall(between(1, N, J),
         ( get_cell(Maze, J, I, C),
           draw_wall(C, J, I, Maze, N)
         ))).
+
+draw_enemies([], _).
+draw_enemies([(X,Y)|T], I) :-
+    format(atom(Sprite), 'assets/enemy_~d.xpm', [I]),
+    draw_entity(X, Y, Sprite),
+    NewI is I + 1,
+    draw_enemies(T, NewI).
 
 draw_path('.', X, Y) :-
     canvas(W), cell_size(S),

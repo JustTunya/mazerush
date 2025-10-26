@@ -1,18 +1,33 @@
 :- use_module(library(lists)).
 
+make_enemies(Count, Maze, N, Enemies) :-
+    findall((X, Y),
+        (
+            between(1, Count, _),
+            random_valid_cell(Maze, N, X, Y)
+        ),
+        RawEnemies
+    ),
+    sort(RawEnemies, Enemies).
+
+move_enemies(_, _, [], _, _, []).
+move_enemies(Maze, N, [(Ex, Ey) | Rest], PlayerX, PlayerY, [(Nx, Ny) | NewRest]) :-
+    move_enemy(Maze, N, Ex, Ey, PlayerX, PlayerY, Nx, Ny),
+    move_enemies(Maze, N, Rest, PlayerX, PlayerY, NewRest).
+
 move_enemy(Maze, N, EnemyX, EnemyY, PlayerX, PlayerY, NextX, NextY) :-
     (EnemyX =:= PlayerX, EnemyY =:= PlayerY ->
         NextX = EnemyX, NextY = EnemyY
     ;   shortest_path(N, Maze, EnemyX, EnemyY, PlayerX, PlayerY, Path),
-        next_enemey_step(Path, EnemyX, EnemyY, NextX, NextY)
+        next_enemy_step(Path, EnemyX, EnemyY, NextX, NextY)
     ).
 
-enemy_collision(PlayerX, PlayerY, EnemyX, EnemyY) :-
-    PlayerX =:= EnemyX, PlayerY =:= EnemyY.
+enemy_collision(PlayerX, PlayerY, Enemies) :-
+    member((PlayerX,PlayerY), Enemies).
 
-next_enemey_step([], EnemyX, EnemyY, EnemyX, EnemyY).
-next_enemey_step([_], EnemyX, EnemyY, EnemyX, EnemyY).
-next_enemey_step([_, (NextX, NextY)|_], _, _, NextX, NextY).
+next_enemy_step([], EnemyX, EnemyY, EnemyX, EnemyY).
+next_enemy_step([_], EnemyX, EnemyY, EnemyX, EnemyY).
+next_enemy_step([_, (NextX, NextY)|_], _, _, NextX, NextY).
 
 % !-- Breadth-First Search Algorithm --!
 
