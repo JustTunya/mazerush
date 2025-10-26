@@ -1,48 +1,54 @@
 start(N, Maze) :-
-    random_valid_cell(N, Maze, StartX, StartY),
-    random_valid_cell(N, Maze, GoalX, GoalY),
-    create_interface(2*N+1.1, 2*N+1.1),
-    game_loop(Maze, 0, StartX, StartY, GoalX, GoalY).
+    random_valid_cell(Maze, N, StartX, StartY),
+    random_valid_cell(Maze, N, GoalX, GoalY),
+    random_valid_cell(Maze, N, EnemyX, EnemyY),
+    create_interface(2*N+2, 2*N+2),
+    game_loop(Maze, 0, StartX, StartY, GoalX, GoalY, EnemyX, EnemyY).
 
 % !-- GAME LOGIC --!
 
-game_loop(Maze, Moves, CurrentX, CurrentY, GoalX, GoalY) :-
+game_loop(Maze, Moves, CurrentX, CurrentY, GoalX, GoalY, EnemyX, EnemyY) :-
     length(Maze, N),
-    draw_cmd_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY),
-    draw_gui_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY),
+    draw_cmd_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY, EnemyX, EnemyY),
+    draw_gui_maze(Maze, N, CurrentX, CurrentY, GoalX, GoalY, EnemyX, EnemyY),
     (goal_reached(CurrentX, CurrentY, GoalX, GoalY) ->
         nl, write('Congratulations! You reached the goal in \033[33m'), write(Moves), write('\033[0m moves!'), nl, nl, !
+    ;   enemy_collision(CurrentX, CurrentY, EnemyX, EnemyY) ->
+        nl, write('\033[31mYou were caught by the enemy!\033[0m'), nl, !
     ;   draw_ui(Moves),
         get_single_char(Code),
         code_to_char(Code, Direction),
-        move(Maze, N, Direction, Moves, NewMoves, CurrentX, CurrentY, NewX, NewY),
-        game_loop(Maze, NewMoves, NewX, NewY, GoalX, GoalY)
+        move(Maze, N, Direction, Moves, NewMoves, CurrentX, CurrentY, NewPlayerX, NewPlayerY),
+        move_enemy(Maze, N, EnemyX, EnemyY, NewPlayerX, NewPlayerY, NewEnemyX, NewEnemyY),
+        game_loop(Maze, NewMoves, NewPlayerX, NewPlayerY, GoalX, GoalY, NewEnemyX, NewEnemyY)
     ), !.
 
 goal_reached(X, Y, X, Y).
 
 % !-- DRAWING TO COMMAND LINE --!
 
-draw_cmd_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY) :-
+draw_cmd_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY) :-
     nl, nl,
     forall(between(1, N, I),
         (forall(between(1, N, J),
             (get_cell(Maze, J, I, Cell),
-            draw_cell(Cell, PlayerX, PlayerY, GoalX, GoalY, J, I))
+            draw_cell(Cell, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY, J, I))
         ),
         nl)
     ).
 
 % Usage: draw_cell(Symbol, PlayerX, PlayerY, GoalX, GoalY, CellX, CellY)
-draw_cell(_, X, Y, _, _, X, Y) :-
+draw_cell(_, X, Y, _, _, _, _, X, Y) :-
     write('\033[33m'), put(0x25C9), write('\033[0m '), !. % Unicode value of ◉ (PLAYER)
-draw_cell(_, _, _, X, Y, X, Y) :-
+draw_cell(_, _, _, X, Y, _, _, X, Y) :-
     write('\033[34m'), put(0x2691), write('\033[0m '), !. % Unicode value of ⚐ (GOAL)
-draw_cell('.', _, _, _, _, _, _) :-
+draw_cell(_, _, _, _, _, X, Y, X, Y) :-
+    write('\033[35m'), put(0x2BBF), write('\033[0m '), !. % Unicode value of ⮿ (ENEMY)
+draw_cell('.', _, _, _, _, _, _, _, _) :-
     write('\033[30m'), put(0x26F6), write('\033[0m '), !. % Unicode value of ⛶ (PATH)
-draw_cell('#', _, _, _, _, _, _) :-
+draw_cell('#', _, _, _, _, _, _, _, _) :-
     write('\033[31m'), put(0x25A8), write('\033[0m '), !. % Unicode value of ▨ (WALL)
-draw_cell(_, _, _, _, _, _, _) :-
+draw_cell(_, _, _, _, _, _, _, _, _) :-
     write('  '). % fallback - empty space
 
 draw_ui(Moves) :-
@@ -53,6 +59,23 @@ draw_ui(Moves) :-
 
 % !-- PLAYERS MOVEMENT --!
 
+% Top edge -> wrap to bottom if bottom is path
+move(Maze, N, w, Curr, New, X, 1, X, N) :-
+    path_cell(Maze, X, N),
+    New is Curr + 1.
+% Bottom edge -> wrap to top if top is path
+move(Maze, N, s, Curr, New, X, N, X, 1) :-
+    path_cell(Maze, X, 1),
+    New is Curr + 1.
+% Left edge -> wrap to right if rightmost is path
+move(Maze, N, a, Curr, New, 1, Y, N, Y) :-
+    path_cell(Maze, N, Y),
+    New is Curr + 1.
+% Right edge -> wrap to left if leftmost is path
+move(Maze, N, d, Curr, New, N, Y, 1, Y) :-
+    path_cell(Maze, 1, Y),
+    New is Curr + 1.
+% Normal movement
 move(Maze, N, Direction, CurrentMoves, NewMoves, CurrentX, CurrentY, NewX, NewY) :-
     step(Direction, CurrentX, CurrentY, TempX, TempY),
     (valid_move(Maze, N, TempX, TempY) ->
@@ -79,6 +102,8 @@ valid_move(Maze, N, X, Y) :-
 
 % !-- UTILITIES --!
 
+path_cell(Maze, X, Y) :- get_cell(Maze, X, Y, '.').
+
 get_cell(Maze, X, Y, Cell) :-
     nth1(Y, Maze, Row),
     nth1(X, Row, Cell).
@@ -91,7 +116,7 @@ code_to_char(Code, Char) :-
     ),
     char_code(Char, LowerCode).
 
-random_valid_cell(N, Maze, RowIndex, ColumnIndex):-
+random_valid_cell(Maze, N, RowIndex, ColumnIndex):-
     random_between(1, N, RowIndex_prime), RowTemp is 2 * RowIndex_prime - 1,
     random_between(1, N, ColumnIndex_prime), ColumnTemp is 2 * ColumnIndex_prime - 1,
     wall_cell(WallCell),

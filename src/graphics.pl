@@ -15,7 +15,7 @@ create_interface(Width, Height) :-
     retractall(cell_size(_)),
     assertz(cell_size(Cell)).
 
-draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY) :-
+draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, EnemyX, EnemyY) :-
     ( canvas(Window) -> send(Window, clear) ; true ),
     % 1) PATH
     forall(between(1, N, I),
@@ -24,9 +24,11 @@ draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY) :-
           draw_path(C, J, I)
         ))),
     % 2) GOAL
-    draw_goal(GoalX, GoalY),
+    draw_entity(GoalX, GoalY, 'assets/goal.xpm'),
     % 3) PLAYER
-    draw_player(PlayerX, PlayerY),
+    draw_entity(PlayerX, PlayerY, 'assets/player.xpm'),
+    % 4) ENEMIES
+    draw_entity(EnemyX, EnemyY, 'assets/enemy_1.xpm'),
     % 4) WALL
     forall(between(1, N, I),
       forall(between(1, N, J),
@@ -41,16 +43,10 @@ draw_path('.', X, Y) :-
     send(W, display, B, point(X0, Y0)), !.
 draw_path(_, _, _) :- true.
 
-draw_goal(GX, GY) :-
+draw_entity(X, Y, Sprite) :-
     canvas(W), cell_size(S),
-    X0 is (GX-1)*S, Y0 is (GY-1)*S,
-    new(B, bitmap('assets/goal.xpm')),
-    send(W, display, B, point(X0, Y0)).
-
-draw_player(PX, PY) :-
-    canvas(W), cell_size(S),
-    X0 is (PX-1)*S, Y0 is (PY-1)*S,
-    new(B, bitmap('assets/player.xpm')),
+    X0 is (X-1)*S, Y0 is (Y-1)*S,
+    new(B, bitmap(Sprite)),
     send(W, display, B, point(X0, Y0)).
 
 draw_wall('#', X, Y, Maze, N) :-
