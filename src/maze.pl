@@ -209,5 +209,5 @@ generate_maze(N, Maze):-
     random_between(1, N, RandomRowIndex), StartRowIndex is 2 * RandomRowIndex - 1,
     random_between(1, N, RandomColumnIndex), StartColumnIndex is 2 * RandomColumnIndex - 1,
     carve_path(Grid, StartRowIndex, StartColumnIndex, Grid_prime), % carve starting cell
-    dfs_carve(Grid_prime, [(StartRowIndex, StartColumnIndex)], GridSize, Maze),
-    print_grid(Maze). % this print is for debug only
+    dfs_carve(Grid_prime, [(StartRowIndex, StartColumnIndex)], GridSize, Maze).
+    % print_grid(Maze).

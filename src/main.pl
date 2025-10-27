@@ -1,4 +1,8 @@
-:- module(main, [main/0]).
-:- use_module(game).
+:- [menu].
+:- [maze].
+:- [game].
+:- [enemy].
+:- [graphics].
 
-main :- game:run.
+main:-
+    menu.

@@ -1,11 +1,9 @@
 menu:-
     print_ascii_art,
-    print_instructions,
     choose_difficulty(N),
-    write(N),
     generate_maze(N, Maze),
-    % start_game(N, Maze).
-    graphic_start_game(N, Maze), !.
+    EnemyNum is max(1, N // 5),
+    start(N, Maze, EnemyNum), !.
 
 choose_difficulty(N):-
     write('a. Easy'), nl,
@@ -13,7 +11,7 @@ choose_difficulty(N):-
     write('c. Hard'), nl,
     write('Choose a difficulty!'), nl,
     get_single_char(Code),
-    char_code(Difficulty, Code), % converting ascii code to Char
+    char_code(Difficulty, Code),
     ( difficulty(Difficulty, N) -> true
     ; write('Invalid choice, try again.'), nl,
       choose_difficulty(N)
@@ -22,9 +20,6 @@ choose_difficulty(N):-
 difficulty(a, 5).
 difficulty(b, 10).
 difficulty(c, 15).
-
-print_instructions:-
-    nl.
 
 print_ascii_art:-
     write('                                               __  '), nl,
