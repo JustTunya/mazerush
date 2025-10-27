@@ -1,7 +1,4 @@
-:- use_module(library(pce)).
-:- dynamic canvas/1.
 :- dynamic cell_size/1.
-
 cell_size(32).
 
 create_interface(Width, Height) :-
