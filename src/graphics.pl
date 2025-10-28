@@ -61,10 +61,10 @@ draw_wall('#', X, Y, Maze, N) :-
     send(W, display, B, point(X0, Y0)), !.
 draw_wall(_, _, _, _, _) :- true.
 
+wall_sprite(_, N, _, Y, 'assets/sidewall.xpm') :-
+    Y =:= N, !.
 wall_sprite(Maze, N, X, Y, 'assets/sidewall.xpm') :-
-    ( Y =:= N
-    ; 
-      Y0 is Y + 1,
-      Y < N, get_cell(Maze, X, Y0, '.')
-    ), !.
+    Y < N,
+    Y0 is Y + 1,
+    get_cell(Maze, X, Y0, '.'), !.
 wall_sprite(_, _, _, _, 'assets/wall.xpm').

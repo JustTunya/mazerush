@@ -5,17 +5,20 @@ menu:-
     EnemyNum is max(1, N // 5),
     start(N, Maze, EnemyNum), !.
 
-choose_difficulty(N):-
+choose_difficulty(N) :-
     write('a. Easy'), nl,
     write('b. Medium'), nl,
     write('c. Hard'), nl,
     write('Choose a difficulty!'), nl,
     get_single_char(Code),
     char_code(Difficulty, Code),
-    ( difficulty(Difficulty, N) -> true
-    ; write('Invalid choice, try again.'), nl,
-      choose_difficulty(N)
-    ).
+    difficulty_picker(Difficulty, N).
+
+difficulty_picker(Difficulty, N) :-
+    difficulty(Difficulty, N), !.
+difficulty_picker(_, N) :-
+    write('Invalid choice, try again.'), nl,
+    choose_difficulty(N).
 
 difficulty(a, 5).
 difficulty(b, 10).

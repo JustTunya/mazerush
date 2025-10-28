@@ -11,18 +11,20 @@ game_loop(Maze, Moves, PX, PY, GX, GY, Enemies) :-
     length(Maze, N),
     draw_cmd_maze(Maze, N, PX, PY, GX, GY, Enemies),
     draw_gui_maze(Maze, N, PX, PY, GX, GY, Enemies),
-    (   goal_reached(PX, PY, GX, GY) ->
-            nl, write('Congratulations! You reached the goal in \033[33m'),
-            write(Moves), write('\033[0m moves!'), nl, nl, !
-    ;   enemy_collision(PX, PY, Enemies) ->
-            nl, write('\033[31mYou were caught by the enemy!\033[0m'), nl, !
-    ;   draw_ui(Moves),
-        get_single_char(Code),
-        code_to_char(Code, Direction),
-        move(Maze, N, Direction, Moves, NewMoves, PX, PY, NPX, NPY),
-        move_enemies(Maze, N, Enemies, NPX, NPY, NewEnemies),
-        game_loop(Maze, NewMoves, NPX, NPY, GX, GY, NewEnemies)
-    ), !.
+    goal_reached(PX, PY, GX, GY), !,
+    nl, write('Congratulations! You reached the goal in \033[33m'),
+    write(Moves), write('\033[0m moves!'), nl, nl.
+game_loop(_, _, PX, PY, _, _, Enemies) :-
+    enemy_collision(PX, PY, Enemies), !,
+    nl, write('\033[31mYou were caught by the enemy!\033[0m'), nl.
+game_loop(Maze, Moves, PX, PY, GX, GY, Enemies) :-
+    length(Maze, N),
+    draw_ui(Moves),
+    get_single_char(Code),
+    code_to_char(Code, Direction),
+    move(Maze, N, Direction, Moves, NewMoves, PX, PY, NPX, NPY),
+    move_enemies(Maze, N, Enemies, NPX, NPY, NewEnemies),
+    game_loop(Maze, NewMoves, NPX, NPY, GX, GY, NewEnemies).
 
 goal_reached(X, Y, X, Y).
 
@@ -80,10 +82,10 @@ move(Maze, N, d, Curr, New, N, Y, 1, Y) :-
 % Normal movement
 move(Maze, N, Direction, CurrentMoves, NewMoves, CurrentX, CurrentY, NewX, NewY) :-
     step(Direction, CurrentX, CurrentY, TempX, TempY),
-    (valid_move(Maze, N, TempX, TempY) ->
-        (NewX = TempX, NewY = TempY, NewMoves is CurrentMoves + 1)
-    ;   (NewX = CurrentX, NewY = CurrentY, NewMoves is CurrentMoves)
-    ).
+    valid_move(Maze, N, TempX, TempY), !,
+    NewX = TempX, NewY = TempY,
+    NewMoves is CurrentMoves + 1.
+move(_, _, _, CurrentMoves, CurrentMoves, CurrentX, CurrentY, CurrentX, CurrentY).
 
 % Usage: step(Direction, CurrentX, CurrentY, NewX, NewY)
 step(w, X, Y, X, Y_prime) :-
@@ -111,18 +113,25 @@ get_cell(Maze, X, Y, Cell) :-
     nth1(X, Row, Cell).
 
 code_to_char(Code, Char) :-
-    char_code(Char, Code),
-    ( Code >= 65, Code =< 90 ->
-        LowerCode is Code + 32
-    ;   LowerCode = Code
-    ),
+    char_code(_, Code),
+    to_lower_code(Code, LowerCode),
     char_code(Char, LowerCode).
 
-random_valid_cell(Maze, N, RowIndex, ColumnIndex):-
-    random_between(1, N, RowIndex_prime), RowTemp is 2 * RowIndex_prime - 1,
-    random_between(1, N, ColumnIndex_prime), ColumnTemp is 2 * ColumnIndex_prime - 1,
+to_lower_code(Code, LowerCode) :-
+    Code >= 65, Code =< 90, !,
+    LowerCode is Code + 32.
+to_lower_code(Code, Code).
+
+random_valid_cell(Maze, N, RowIndex, ColumnIndex) :-
+    random_between(1, N, RowIndexPrime),
+    RowTemp is 2 * RowIndexPrime - 1,
+    random_between(1, N, ColumnIndexPrime),
+    ColumnTemp is 2 * ColumnIndexPrime - 1,
     wall_cell(WallCell),
     get_cell(Maze, RowTemp, ColumnTemp, Cell),
-    ( Cell \= WallCell -> RowIndex = RowTemp, ColumnIndex = ColumnTemp
-    ; random_valid_cell(N, Maze, RowIndex, ColumnIndex)
-    ).
+    cell_check(Cell, WallCell, Maze, N, RowTemp, ColumnTemp, RowIndex, ColumnIndex).
+
+cell_check(Cell, WallCell, _, _, RowTemp, ColumnTemp, RowTemp, ColumnTemp) :-
+    Cell \= WallCell, !.
+cell_check(_, _, Maze, N, _, _, RowIndex, ColumnIndex) :-
+    random_valid_cell(Maze, N, RowIndex, ColumnIndex).

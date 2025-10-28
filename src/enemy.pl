@@ -15,12 +15,12 @@ move_enemies(Maze, N, [(Ex, Ey) | Rest], PlayerX, PlayerY, [(Nx, Ny) | NewRest])
     move_enemy(Maze, N, Ex, Ey, PlayerX, PlayerY, Nx, Ny),
     move_enemies(Maze, N, Rest, PlayerX, PlayerY, NewRest).
 
+move_enemy(_, _, EnemyX, EnemyY, PlayerX, PlayerY, NextX, NextY) :-
+    EnemyX =:= PlayerX, EnemyY =:= PlayerY, !,
+    NextX = EnemyX, NextY = EnemyY.
 move_enemy(Maze, N, EnemyX, EnemyY, PlayerX, PlayerY, NextX, NextY) :-
-    (EnemyX =:= PlayerX, EnemyY =:= PlayerY ->
-        NextX = EnemyX, NextY = EnemyY
-    ;   shortest_path(N, Maze, EnemyX, EnemyY, PlayerX, PlayerY, Path),
-        next_enemy_step(Path, EnemyX, EnemyY, NextX, NextY)
-    ).
+    shortest_path(N, Maze, EnemyX, EnemyY, PlayerX, PlayerY, Path),
+    next_enemy_step(Path, EnemyX, EnemyY, NextX, NextY).
 
 enemy_collision(PlayerX, PlayerY, Enemies) :-
     member((PlayerX,PlayerY), Enemies).
@@ -64,7 +64,9 @@ next_move((X,Y), (NX,NY), N, Maze, Parents) :-
 % Build the path from the Parents mapping
 build_path((X,Y), Parents, [(X,Y)|Rest]) :-
     memberchk((X,Y)-Parent, Parents),
-    ( Parent == none ->
-        Rest = []
-    ;   build_path(Parent, Parents, Rest)
-    ).
+    extend_path(Parent, Parents, Rest).
+
+% Extend path recursively from parent nodes
+extend_path(none, _, []) :- !.
+extend_path(Parent, Parents, Rest) :-
+    build_path(Parent, Parents, Rest).

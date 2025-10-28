@@ -163,19 +163,23 @@ mid_cell((CurrentRow, CurrentColumn), (TargetRow, TargetColumn), (MiddleRow, Mid
 % MiddleColumn = 5.
 
 % dfs_carve(+Grid, +Stack, +N, -NewGrid)
-dfs_carve(Grid, [], _, Grid). % we are done when the stack gets empty
-
-dfs_carve(Grid, [(RowIndex, ColumnIndex)|RestStack], N, NewGrid):-
+dfs_carve(Grid, [], _, Grid).  % done when stack is empty
+% dead-end: no unvisited neighbours -> backtrack
+dfs_carve(Grid, [(RowIndex, ColumnIndex)|RestStack], N, NewGrid) :-
     neighbours(RowIndex, ColumnIndex, N, Neighbours),
-    filter_unvisited(Neighbours, Grid, Unvisited), % we need the unvisited neighbours
-    ( Unvisited = [] -> dfs_carve(Grid, RestStack, N, NewGrid) % this means that we reached a dead-end in carving and need to backtrack
-    ;
-      random_member((RandomRow, RandomColumn), Unvisited),
-      mid_cell((RowIndex, ColumnIndex), (RandomRow, RandomColumn), (MiddleRow, MiddleColumn)),
-      carve_path(Grid, MiddleRow, MiddleColumn, Grid_prime),
-      carve_path(Grid_prime, RandomRow, RandomColumn, GridNext), % carve target cell
-      dfs_carve(GridNext, [(RandomRow, RandomColumn), (RowIndex, ColumnIndex)|RestStack], N, NewGrid) % pushing the new cell on top instead of replacing!!!
-    ).
+    filter_unvisited(Neighbours, Grid, Unvisited),
+    Unvisited = [], !,
+    dfs_carve(Grid, RestStack, N, NewGrid).
+% progress: choose an unvisited neighbour, carve, push current back
+dfs_carve(Grid, [(RowIndex, ColumnIndex)|RestStack], N, NewGrid) :-
+    neighbours(RowIndex, ColumnIndex, N, Neighbours),
+    filter_unvisited(Neighbours, Grid, Unvisited),
+    Unvisited = [_|_], !,
+    random_member((RandomRow, RandomColumn), Unvisited),
+    mid_cell((RowIndex, ColumnIndex), (RandomRow, RandomColumn), (MiddleRow, MiddleColumn)),
+    carve_path(Grid, MiddleRow, MiddleColumn, Grid1),
+    carve_path(Grid1, RandomRow, RandomColumn, GridNext),
+    dfs_carve(GridNext, [(RandomRow, RandomColumn), (RowIndex, ColumnIndex)|RestStack], N, NewGrid).
 
 %filter unvisited neighbours
 % filter_unvisited(+NeighboursList, +Grid, -FilteredNeighboursList)
