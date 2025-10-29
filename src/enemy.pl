@@ -1,14 +1,19 @@
 :- use_module(library(lists)).
 
-make_enemies(Count, Maze, N, Enemies) :-
-    findall((X, Y),
-        (
-            between(1, Count, _),
-            random_valid_cell(Maze, N, X, Y)
-        ),
-        RawEnemies
-    ),
-    sort(RawEnemies, Enemies).
+make_enemies(Count, Maze, N, MinD, Fixed, Enemies) :-
+    place_enemies(Count, Maze, N, MinD, Fixed, [], Enemies).
+
+place_enemies(0, _, _, _, _, Acc, Enemies) :- sort(Acc, Enemies).
+place_enemies(K, Maze, N, MinD, Fixed, Acc, Enemies) :-
+    K > 0,
+    random_valid_cell(Maze, N, X, Y),
+    far_enough((X,Y), Fixed, MinD),
+    far_enough((X,Y), Acc,  MinD),
+    \+ member((X,Y), Acc),
+    K1 is K-1,
+    place_enemies(K1, Maze, N, MinD, Fixed, [(X,Y)|Acc], Enemies).
+place_enemies(K, Maze, N, MinD, Fixed, Acc, Enemies) :-
+    place_enemies(K, Maze, N, MinD, Fixed, Acc, Enemies).
 
 move_enemies(_, _, [], _, _, []).
 move_enemies(Maze, N, [(Ex, Ey) | Rest], PlayerX, PlayerY, [(Nx, Ny) | NewRest]) :-

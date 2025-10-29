@@ -1,7 +1,9 @@
-start(N, Maze, K) :-
+start(N, Maze) :-
     random_valid_cell(Maze, N, StartX, StartY),
-    random_valid_cell(Maze, N, GoalX, GoalY),
-    make_enemies(K, Maze, N, Enemies),
+    MinGoalDistance is 2 * N, MinEnemyDistance is max(3, N // 4),
+    pick_far_cell(Maze, N, MinGoalDistance, [(StartX, StartY)], GoalX, GoalY),
+    EnemyCount is max(1, N // 5),
+    make_enemies(EnemyCount, Maze, N, MinEnemyDistance, [(StartX, StartY), (GoalX, GoalY)], Enemies),
     create_interface(2*N+2, 2*N+2),
     game_loop(Maze, 0, StartX, StartY, GoalX, GoalY, Enemies).
 
@@ -135,3 +137,18 @@ cell_check(Cell, WallCell, _, _, RowTemp, ColumnTemp, RowTemp, ColumnTemp) :-
     Cell \= WallCell, !.
 cell_check(_, _, Maze, N, _, _, RowIndex, ColumnIndex) :-
     random_valid_cell(Maze, N, RowIndex, ColumnIndex).
+
+pick_far_cell(Maze, N, MinDistance, Fixed, X, Y) :-
+    random_valid_cell(Maze, N, X, Y),
+    far_enough((X,Y), Fixed, MinDistance), !.
+pick_far_cell(Maze, N, MinDistance, Fixed, X, Y) :-
+    pick_far_cell(Maze, N, MinDistance, Fixed, X, Y).
+
+far_enough(_, [], _).
+far_enough(P, [Q|Rest], MinDistance) :-
+    manhattan(P, Q, D),
+    D >= MinDistance,
+    far_enough(P, Rest, MinDistance).
+
+manhattan((X1, Y1), (X2, Y2), D) :-
+    DX is abs(X1 - X2), DY is abs(Y1 - Y2), D is DX + DY.

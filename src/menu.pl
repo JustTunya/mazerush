@@ -2,8 +2,7 @@ menu:-
     print_ascii_art,
     choose_difficulty(N),
     generate_maze(N, Maze),
-    EnemyNum is max(1, N // 5),
-    start(N, Maze, EnemyNum), !.
+    start(N, Maze), !.
 
 choose_difficulty(N) :-
     write('a. Easy'), nl,
