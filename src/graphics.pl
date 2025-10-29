@@ -6,6 +6,7 @@ create_interface(Width, Height) :-
     WinW is Width * Cell,
     WinH is Height * Cell,
     new(Window, picture('MazeRush', size(WinW, WinH))),
+    send(Window, scrollbars, none), % no scrollbars
     send(Window, open),
     retractall(canvas(_)),
     assertz(canvas(Window)),

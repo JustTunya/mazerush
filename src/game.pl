@@ -4,7 +4,7 @@ start(N, Maze) :-
     pick_far_cell(Maze, N, MinGoalDistance, [(StartX, StartY)], GoalX, GoalY),
     EnemyCount is max(1, N // 5),
     make_enemies(EnemyCount, Maze, N, MinEnemyDistance, [(StartX, StartY), (GoalX, GoalY)], Enemies),
-    create_interface(2*N+2, 2*N+2),
+    create_interface(2*N+1, 2*N+1),
     game_loop(Maze, 0, StartX, StartY, GoalX, GoalY, Enemies).
 
 % !-- GAME LOGIC --!
