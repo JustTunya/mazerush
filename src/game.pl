@@ -1,3 +1,4 @@
+% start(+N, +Maze)
 start(N, Maze) :-
     random_valid_cell(Maze, N, StartX, StartY),
     MinGoalDistance is 2 * N, MinEnemyDistance is max(3, N // 4),
@@ -9,6 +10,7 @@ start(N, Maze) :-
 
 % !-- GAME LOGIC --!
 
+% game_loop(+Maze, +Moves, +PX, +PY, +GX, +GY, +Enemies)
 game_loop(Maze, Moves, PX, PY, GX, GY, Enemies) :-
     length(Maze, N),
     draw_cmd_maze(Maze, N, PX, PY, GX, GY, Enemies),
@@ -28,10 +30,12 @@ game_loop(Maze, Moves, PX, PY, GX, GY, Enemies) :-
     move_enemies(Maze, N, Enemies, NPX, NPY, NewEnemies),
     game_loop(Maze, NewMoves, NPX, NPY, GX, GY, NewEnemies).
 
+% goal_reached(+X, +Y, +X, +Y)
 goal_reached(X, Y, X, Y).
 
 % !-- DRAWING TO COMMAND LINE --!
 
+% draw_cmd_maze(+Maze, +N, +PlayerX, +PlayerY, +GoalX, +GoalY, +Enemies)
 draw_cmd_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, Enemies) :-
     nl, nl,
     forall(between(1, N, I),
@@ -42,7 +46,7 @@ draw_cmd_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, Enemies) :-
         nl)
     ).
 
-% Usage: draw_cell(Symbol, PlayerX, PlayerY, GoalX, GoalY, CellX, CellY)
+% draw_cell(+Symbol, +PlayerX, +PlayerY, +GoalX, +GoalY, +Enemies, +CellX, +CellY)
 draw_cell(_, X, Y, _, _, _, X, Y) :-
     write('\033[33m'), put(0x25C9), write('\033[0m '), !. % Unicode value of ◉ (PLAYER)
 draw_cell(_, _, _, X, Y, _, X, Y) :-
@@ -57,6 +61,7 @@ draw_cell('#', _, _, _, _, _, _, _) :-
 draw_cell(_, _, _, _, _, _, _, _) :-
     write('  '). % fallback - empty space
 
+% draw_ui(+Moves)
 draw_ui(Moves) :-
     nl,
     write('Controls: w \033[30m- up\033[0m, a \033[30m- left\033[0m, s \033[30m- down\033[0m, d \033[30m- right\033[0m'), nl,
@@ -65,6 +70,7 @@ draw_ui(Moves) :-
 
 % !-- PLAYERS MOVEMENT --!
 
+% move(+Maze, +N, +Direction, +CurrentMoves, -NewMoves, +CurrentX, +CurrentY, -NewX, -NewY)
 % Top edge -> wrap to bottom if bottom is path
 move(Maze, N, w, Curr, New, X, 1, X, N) :-
     path_cell(Maze, X, N),
@@ -89,7 +95,7 @@ move(Maze, N, Direction, CurrentMoves, NewMoves, CurrentX, CurrentY, NewX, NewY)
     NewMoves is CurrentMoves + 1.
 move(_, _, _, CurrentMoves, CurrentMoves, CurrentX, CurrentY, CurrentX, CurrentY).
 
-% Usage: step(Direction, CurrentX, CurrentY, NewX, NewY)
+% step(+Direction, +CurrentX, +CurrentY, -NewX, -NewY)
 step(w, X, Y, X, Y_prime) :-
     Y_prime is Y - 1.
 step(a, X, Y, X_prime, Y) :-
@@ -100,6 +106,7 @@ step(d, X, Y, X_prime, Y) :-
     X_prime is X + 1.
 step(_, X, Y, X, Y). % fallback - no movement
 
+% valid_move(+Maze, +N, +X, +Y)
 valid_move(Maze, N, X, Y) :-
     between(1, N, X),
     between(1, N, Y),
@@ -108,22 +115,27 @@ valid_move(Maze, N, X, Y) :-
 
 % !-- UTILITIES --!
 
+% path_cell(+Maze, +X, +Y)
 path_cell(Maze, X, Y) :- get_cell(Maze, X, Y, '.').
 
+% get_cell(+Maze, +X, +Y, -Cell)
 get_cell(Maze, X, Y, Cell) :-
     nth1(Y, Maze, Row),
     nth1(X, Row, Cell).
 
+% code_to_char(+Code, -Char)
 code_to_char(Code, Char) :-
     char_code(_, Code),
     to_lower_code(Code, LowerCode),
     char_code(Char, LowerCode).
 
+% to_lower_code(+Code, -LowerCode)
 to_lower_code(Code, LowerCode) :-
     Code >= 65, Code =< 90, !,
     LowerCode is Code + 32.
 to_lower_code(Code, Code).
 
+% random_valid_cell(+Maze, +N, -RowIndex, -ColumnIndex)
 random_valid_cell(Maze, N, RowIndex, ColumnIndex) :-
     random_between(1, N, RowIndexPrime),
     RowTemp is 2 * RowIndexPrime - 1,
@@ -133,22 +145,26 @@ random_valid_cell(Maze, N, RowIndex, ColumnIndex) :-
     get_cell(Maze, RowTemp, ColumnTemp, Cell),
     cell_check(Cell, WallCell, Maze, N, RowTemp, ColumnTemp, RowIndex, ColumnIndex).
 
+% cell_check(+Cell, +WallCell, +Maze, +N, +RowTemp, +ColumnTemp, -RowIndex, -ColumnIndex)
 cell_check(Cell, WallCell, _, _, RowTemp, ColumnTemp, RowTemp, ColumnTemp) :-
     Cell \= WallCell, !.
 cell_check(_, _, Maze, N, _, _, RowIndex, ColumnIndex) :-
     random_valid_cell(Maze, N, RowIndex, ColumnIndex).
 
+% pick_far_cell(+Maze, +N, +MinDistance, +Fixed, -X, -Y)
 pick_far_cell(Maze, N, MinDistance, Fixed, X, Y) :-
     random_valid_cell(Maze, N, X, Y),
     far_enough((X,Y), Fixed, MinDistance), !.
 pick_far_cell(Maze, N, MinDistance, Fixed, X, Y) :-
     pick_far_cell(Maze, N, MinDistance, Fixed, X, Y).
 
+% far_enough(+Position, +PositionsList, +MinDistance)
 far_enough(_, [], _).
 far_enough(P, [Q|Rest], MinDistance) :-
     manhattan(P, Q, D),
     D >= MinDistance,
     far_enough(P, Rest, MinDistance).
 
+% manhattan(+Position1, +Position2, -Distance)
 manhattan((X1, Y1), (X2, Y2), D) :-
     DX is abs(X1 - X2), DY is abs(Y1 - Y2), D is DX + DY.

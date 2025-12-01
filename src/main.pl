@@ -4,5 +4,6 @@
 :- [enemy].
 :- [graphics].
 
+% main
 main:-
     menu.

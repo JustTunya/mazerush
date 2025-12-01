@@ -1,6 +1,8 @@
+% dynamic cell_size/1 - allows cell_size to be modified at runtime (asserted/retracted dynamically)
 :- dynamic cell_size/1.
-cell_size(32).
+cell_size(32). % Default cell size in pixels
 
+% create_interface(+Width, +Height)
 create_interface(Width, Height) :-
     cell_size(Cell),
     WinW is Width * Cell,
@@ -13,6 +15,7 @@ create_interface(Width, Height) :-
     retractall(cell_size(_)),
     assertz(cell_size(Cell)).
 
+% draw_gui_maze(+Maze, +N, +PlayerX, +PlayerY, +GoalX, +GoalY, +Enemies)
 draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, Enemies) :-
     ( canvas(Window) -> send(Window, clear) ; true ),
     % 1) PATH
@@ -32,8 +35,9 @@ draw_gui_maze(Maze, N, PlayerX, PlayerY, GoalX, GoalY, Enemies) :-
       forall(between(1, N, J),
         ( get_cell(Maze, J, I, C),
           draw_wall(C, J, I, Maze, N)
-        ))).
+        ))).%
 
+% draw_enemies(+EnemiesList, +Counter)
 draw_enemies([], _).
 draw_enemies([(X,Y)|T], I) :-
     format(atom(Sprite), 'assets/enemy_~d.xpm', [I]),
@@ -41,6 +45,7 @@ draw_enemies([(X,Y)|T], I) :-
     NewI is I + 1,
     draw_enemies(T, NewI).
 
+% draw_path(+Cell, +X, +Y)
 draw_path('.', X, Y) :-
     canvas(W), cell_size(S),
     X0 is (X-1)*S, Y0 is (Y-1)*S,
@@ -48,12 +53,14 @@ draw_path('.', X, Y) :-
     send(W, display, B, point(X0, Y0)), !.
 draw_path(_, _, _) :- true.
 
+% draw_entity(+X, +Y, +Sprite)
 draw_entity(X, Y, Sprite) :-
     canvas(W), cell_size(S),
     X0 is (X-1)*S, Y0 is (Y-1)*S,
     new(B, bitmap(Sprite)),
     send(W, display, B, point(X0, Y0)).
 
+% draw_wall(+Cell, +X, +Y, +Maze, +N)
 draw_wall('#', X, Y, Maze, N) :-
     canvas(W), cell_size(S),
     X0 is (X-1)*S, Y0 is (Y-1)*S,
@@ -62,6 +69,7 @@ draw_wall('#', X, Y, Maze, N) :-
     send(W, display, B, point(X0, Y0)), !.
 draw_wall(_, _, _, _, _) :- true.
 
+% wall_sprite(+Maze, +N, +X, +Y, -Sprite)
 wall_sprite(_, N, _, Y, 'assets/sidewall.xpm') :-
     Y =:= N, !.
 wall_sprite(Maze, N, X, Y, 'assets/sidewall.xpm') :-
